@@ -1,0 +1,85 @@
+{
+    "valid": {
+        "name": "John Doe",
+        "username": "johndoe",
+        "email": "john.doe@example.com",
+        "phone": "1-555-123-4567",
+        "website": "https://johndoe.example.com",
+        "address": {
+            "street": "123 Main St",
+            "suite": "Apt 456",
+            "city": "Anytown",
+            "zipcode": "12345-6789",
+            "geo": {
+                "lat": "40.7128",
+                "lng": "-74.0060"
+            }
+        },
+        "company": {
+            "name": "Acme Corp",
+            "catchPhrase": "Innovative solutions for tomorrow",
+            "bs": "synergize cutting-edge technologies"
+        }
+    },
+    "minimal": {
+        "name": "Jane Smith",
+        "username": "janesmith",
+        "email": "jane.smith@example.com"
+    },
+    "invalid_email": {
+        "name": "Invalid User",
+        "username": "invaliduser",
+        "email": "invalid-email",
+        "phone": "555-1234"
+    },
+    "empty_fields": {
+        "name": "",
+        "username": "",
+        "email": "",
+        "phone": ""
+    },
+    "long_fields": {
+        "name": "This is a very long name that might exceed normal field limits and should be tested for proper validation",
+        "username": "verylongusernamethatmightexceedlimits",
+        "email": "verylongemailaddress@verylongdomainname.example",
+        "phone": "1-555-123-4567-890-123-456"
+    },
+    "special_characters": {
+        "name": "José María O'Connor-Smith",
+        "username": "jose.maria",
+        "email": "josé.maría@example.com",
+        "phone": "+1-555-123-4567"
+    },
+    "bulk_users": [
+        {
+            "name": "Alice Johnson",
+            "username": "alicejohnson",
+            "email": "alice.johnson@example.com",
+            "phone": "1-555-111-1111"
+        },
+        {
+            "name": "Bob Wilson",
+            "username": "bobwilson",
+            "email": "bob.wilson@example.com",
+            "phone": "1-555-222-2222"
+        },
+        {
+            "name": "Carol Brown",
+            "username": "carolbrown",
+            "email": "carol.brown@example.com",
+            "phone": "1-555-333-3333"
+        },
+        {
+            "name": "David Lee",
+            "username": "davidlee",
+            "email": "david.lee@example.com",
+            "phone": "1-555-444-4444"
+        },
+        {
+            "name": "Eva Garcia",
+            "username": "evagarcia",
+            "email": "eva.garcia@example.com",
+            "phone": "1-555-555-5555"
+        }
+    ]
+} 

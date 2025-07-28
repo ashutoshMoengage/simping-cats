@@ -1,0 +1,77 @@
+{
+    "dev": {
+        "base_url": "https://jsonplaceholder.typicode.com",
+        "reqres_url": "https://reqres.in/api",
+        "httpbin_url": "https://httpbin.org",
+        "timeout": 30,
+        "retry_count": 3,
+        "retry_delay": 1,
+        "headers": {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "PyTest-API-Framework/1.0"
+        },
+        "auth": {
+            "type": "bearer",
+            "token": null
+        },
+        "database": {
+            "enabled": false,
+            "url": null
+        },
+        "logging": {
+            "level": "DEBUG",
+            "format": "detailed"
+        }
+    },
+    "staging": {
+        "base_url": "https://jsonplaceholder.typicode.com",
+        "reqres_url": "https://reqres.in/api",
+        "httpbin_url": "https://httpbin.org",
+        "timeout": 45,
+        "retry_count": 2,
+        "retry_delay": 2,
+        "headers": {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "PyTest-API-Framework/1.0"
+        },
+        "auth": {
+            "type": "bearer",
+            "token": null
+        },
+        "database": {
+            "enabled": false,
+            "url": null
+        },
+        "logging": {
+            "level": "INFO",
+            "format": "standard"
+        }
+    },
+    "prod": {
+        "base_url": "https://jsonplaceholder.typicode.com",
+        "reqres_url": "https://reqres.in/api",
+        "httpbin_url": "https://httpbin.org",
+        "timeout": 60,
+        "retry_count": 1,
+        "retry_delay": 3,
+        "headers": {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "PyTest-API-Framework/1.0"
+        },
+        "auth": {
+            "type": "bearer",
+            "token": null
+        },
+        "database": {
+            "enabled": false,
+            "url": null
+        },
+        "logging": {
+            "level": "WARNING",
+            "format": "minimal"
+        }
+    }
+} 
