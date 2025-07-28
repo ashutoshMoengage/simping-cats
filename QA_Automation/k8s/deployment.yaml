@@ -1,0 +1,612 @@
+# 🚀 Kubernetes Deployment for API Testing Framework
+# ====================================================
+#
+# 📚 FOR BEGINNERS:
+# A Deployment in Kubernetes manages a group of identical pods (containers).
+# It ensures your application is always running and handles updates safely.
+#
+# 🎯 WHAT THIS DEPLOYMENT DOES:
+# ✅ Runs your API testing framework in containers
+# ✅ Automatically restarts failed containers
+# ✅ Scales up/down based on demand
+# ✅ Handles rolling updates with zero downtime
+# ✅ Monitors health and readiness
+#
+# 🌟 PRODUCTION FEATURES:
+# - Resource limits and requests
+# - Health checks and readiness probes
+# - Security contexts (non-root user)
+# - Environment-specific configurations
+# - Automatic restarts and scaling
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-testing-framework
+  namespace: api-testing
+  labels:
+    app: api-testing-framework
+    version: "2.0.0"
+    component: testing
+    team: qa-automation
+  annotations:
+    # 📝 Deployment metadata
+    description: "Advanced API Testing Framework with PyTest"
+    contact: "qa-team@company.com"
+    documentation: "https://github.com/yourcompany/pytest-framework"
+    
+    # 🔄 Deployment strategy info
+    deployment.kubernetes.io/revision: "1"
+    deployment.kubernetes.io/strategy: "RollingUpdate"
+    
+    # 📊 Monitoring annotations (for Prometheus)
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+    prometheus.io/path: "/metrics"
+
+spec:
+  # 🎯 Replica Management
+  replicas: 3  # Run 3 instances for high availability
+  
+  # 📈 Scaling Strategy
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1      # Max 1 pod down during updates
+      maxSurge: 1           # Max 1 extra pod during updates
+  
+  # 🏷️ Pod Selector
+  selector:
+    matchLabels:
+      app: api-testing-framework
+  
+  # 📦 Pod Template
+  template:
+    metadata:
+      labels:
+        app: api-testing-framework
+        version: "2.0.0"
+        component: testing
+        team: qa-automation
+      annotations:
+        # 🔄 Force pod restart when config changes
+        config/checksum: "{{ .Values.configChecksum | default \"abc123\" }}"
+        
+        # 📊 Monitoring annotations
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+        
+        # 🔒 Security annotations
+        container.seccomp.security.alpha.kubernetes.io/pod: runtime/default
+        
+    spec:
+      # 🔐 Security Context (Pod Level)
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000        # pytest user
+        runAsGroup: 1000       # pytest group
+        fsGroup: 1000          # File system group
+        seccompProfile:
+          type: RuntimeDefault
+      
+      # 🚀 Service Account (for RBAC)
+      serviceAccountName: api-testing-service-account
+      
+      # 🔄 Restart Policy
+      restartPolicy: Always
+      
+      # 📁 Volumes
+      volumes:
+      # Configuration volume
+      - name: config-volume
+        configMap:
+          name: api-testing-config
+          defaultMode: 0644
+      
+      # Secrets volume
+      - name: secrets-volume
+        secret:
+          secretName: api-testing-secrets
+          defaultMode: 0600
+      
+      # Reports volume (persistent)
+      - name: reports-volume
+        persistentVolumeClaim:
+          claimName: api-testing-reports-pvc
+      
+      # Logs volume (persistent)
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: api-testing-logs-pvc
+      
+      # Temporary volume for test data
+      - name: tmp-volume
+        emptyDir:
+          sizeLimit: 1Gi
+      
+      # 📦 Init Containers (Optional)
+      initContainers:
+      # Pre-flight checks container
+      - name: preflight-checks
+        image: api-testing-framework:2.0.0
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          echo "🔍 Running pre-flight checks..."
+          
+          # Check if external APIs are reachable
+          echo "📡 Testing JSONPlaceholder API..."
+          curl -f https://jsonplaceholder.typicode.com/users/1 || exit 1
+          
+          echo "📡 Testing ReqRes API..."
+          curl -f https://reqres.in/api/users/1 || exit 1
+          
+          # Validate configuration
+          echo "🔧 Validating configuration..."
+          python -c "from config.config import config_instance; print(f'✅ Config loaded: {config_instance.base_url}')"
+          
+          # Check database connectivity (if configured)
+          if [ ! -z "$POSTGRES_URL" ]; then
+            echo "🗄️ Testing database connection..."
+            python -c "
+            import psycopg2
+            try:
+                conn = psycopg2.connect('$POSTGRES_URL')
+                conn.close()
+                print('✅ Database connection successful')
+            except Exception as e:
+                print(f'❌ Database connection failed: {e}')
+                exit(1)
+            "
+          fi
+          
+          echo "✅ All pre-flight checks passed!"
+        
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: POSTGRES_URL
+          valueFrom:
+            secretKeyRef:
+              name: api-testing-secrets
+              key: postgres-url
+              optional: true
+        
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+      
+      # 🎯 Main Application Containers
+      containers:
+      # API Testing Framework Container
+      - name: api-testing-framework
+        image: api-testing-framework:2.0.0
+        imagePullPolicy: IfNotPresent
+        
+        # 🔐 Security Context (Container Level)
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+        
+        # 🚀 Container Ports
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+        
+        # 🌍 Environment Variables
+        env:
+        # Basic configuration
+        - name: ENVIRONMENT
+          value: "production"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: PYTEST_WORKERS
+          value: "auto"
+        
+        # Pod information (useful for debugging)
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        
+        # Secrets (from Kubernetes secrets)
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: api-testing-secrets
+              key: github-token
+              optional: true
+        - name: POSTGRES_URL
+          valueFrom:
+            secretKeyRef:
+              name: api-testing-secrets
+              key: postgres-url
+              optional: true
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: api-testing-secrets
+              key: redis-url
+              optional: true
+        
+        # Configuration from ConfigMap
+        - name: API_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: api-testing-config
+              key: api-base-url
+        - name: TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: api-testing-config
+              key: timeout
+        
+        # 📁 Volume Mounts
+        volumeMounts:
+        # Configuration files
+        - name: config-volume
+          mountPath: /app/config/environments-k8s.json
+          subPath: environments.json
+          readOnly: true
+        
+        # Secrets
+        - name: secrets-volume
+          mountPath: /app/secrets
+          readOnly: true
+        
+        # Reports (persistent storage)
+        - name: reports-volume
+          mountPath: /app/reports
+        
+        # Logs (persistent storage)
+        - name: logs-volume
+          mountPath: /app/logs
+        
+        # Temporary files
+        - name: tmp-volume
+          mountPath: /tmp
+        
+        # 🏥 Health Checks
+        # Liveness Probe - Restart container if this fails
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 30  # Wait 30s before first check
+          periodSeconds: 30        # Check every 30s
+          timeoutSeconds: 10       # Timeout after 10s
+          failureThreshold: 3      # Fail after 3 attempts
+          successThreshold: 1      # Success after 1 attempt
+        
+        # Readiness Probe - Don't send traffic until ready
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 10  # Wait 10s before first check
+          periodSeconds: 10        # Check every 10s
+          timeoutSeconds: 5        # Timeout after 5s
+          failureThreshold: 3      # Fail after 3 attempts
+          successThreshold: 1      # Success after 1 attempt
+        
+        # Startup Probe - Container starting up
+        startupProbe:
+          httpGet:
+            path: /health
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 10  # Wait 10s before first check
+          periodSeconds: 5         # Check every 5s
+          timeoutSeconds: 5        # Timeout after 5s
+          failureThreshold: 30     # Allow 150s for startup (5s * 30)
+          successThreshold: 1      # Success after 1 attempt
+        
+        # 🖥️ Resource Management
+        resources:
+          requests:
+            # Guaranteed resources
+            cpu: "500m"      # 0.5 CPU cores
+            memory: "1Gi"    # 1GB RAM
+            ephemeral-storage: "2Gi"  # 2GB temp storage
+          limits:
+            # Maximum resources
+            cpu: "2"         # 2 CPU cores max
+            memory: "4Gi"    # 4GB RAM max
+            ephemeral-storage: "5Gi"  # 5GB temp storage max
+        
+        # 🔄 Lifecycle Hooks
+        lifecycle:
+          # Pre-stop hook - graceful shutdown
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - |
+                echo "🔄 Graceful shutdown initiated..."
+                
+                # Stop accepting new requests
+                echo "🚫 Stopping HTTP server..."
+                
+                # Wait for current tests to complete (max 30 seconds)
+                echo "⏳ Waiting for current tests to complete..."
+                sleep 30
+                
+                # Generate final reports
+                echo "📊 Generating final reports..."
+                if [ -d "/app/reports/allure-results" ]; then
+                  allure generate /app/reports/allure-results -o /app/reports/final-allure-report --clean
+                fi
+                
+                echo "✅ Graceful shutdown completed"
+        
+        # 🔧 Container Command Override (Optional)
+        # Uncomment to override default CMD from Dockerfile
+        # command: ["python", "-m", "pytest"]
+        # args:
+        # - "--html=reports/k8s-report.html"
+        # - "--self-contained-html"
+        # - "--alluredir=reports/allure-results"
+        # - "--json-report"
+        # - "--json-report-file=reports/k8s-results.json"
+        # - "--tb=short"
+        # - "-v"
+        # - "-n"
+        # - "auto"
+      
+      # 📊 Sidecar Container: Metrics Exporter
+      - name: metrics-exporter
+        image: prom/node-exporter:v1.6.1
+        ports:
+        - name: node-metrics
+          containerPort: 9100
+          protocol: TCP
+        
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65534  # nobody user
+          capabilities:
+            drop:
+            - ALL
+        
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+      
+      # 🔄 Pod Scheduling
+      # Node selection and affinity rules
+      nodeSelector:
+        kubernetes.io/os: linux
+        # node-type: testing  # Uncomment to run only on testing nodes
+      
+      # 📍 Pod Affinity - Prefer to spread across different nodes
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - api-testing-framework
+              topologyKey: kubernetes.io/hostname
+      
+      # 🚫 Tolerations - Allow scheduling on tainted nodes
+      tolerations:
+      - key: "testing"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      - key: "node.kubernetes.io/not-ready"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 300  # Tolerate not-ready for 5 minutes
+      
+      # ⏳ Termination Grace Period
+      terminationGracePeriodSeconds: 60  # Allow 60 seconds for graceful shutdown
+
+---
+# 🔧 Horizontal Pod Autoscaler (HPA)
+# Automatically scales the deployment based on CPU/memory usage
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-testing-framework-hpa
+  namespace: api-testing
+  labels:
+    app: api-testing-framework
+    component: autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-testing-framework
+  
+  # 📈 Scaling Configuration
+  minReplicas: 2    # Minimum 2 pods
+  maxReplicas: 10   # Maximum 10 pods
+  
+  # 📊 Scaling Metrics
+  metrics:
+  # Scale based on CPU usage
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70  # Scale up if CPU > 70%
+  
+  # Scale based on memory usage
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80  # Scale up if memory > 80%
+  
+  # 🔄 Scaling Behavior
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60  # Wait 60s before scaling up
+      policies:
+      - type: Percent
+        value: 50     # Scale up by 50% of current replicas
+        periodSeconds: 60
+      - type: Pods
+        value: 2      # Or add 2 pods, whichever is smaller
+        periodSeconds: 60
+    
+    scaleDown:
+      stabilizationWindowSeconds: 300  # Wait 5 minutes before scaling down
+      policies:
+      - type: Percent
+        value: 10     # Scale down by 10% of current replicas
+        periodSeconds: 60
+
+---
+# 📊 Pod Disruption Budget (PDB)
+# Ensures minimum number of pods remain available during disruptions
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-testing-framework-pdb
+  namespace: api-testing
+  labels:
+    app: api-testing-framework
+    component: availability
+spec:
+  minAvailable: 1  # Always keep at least 1 pod running
+  selector:
+    matchLabels:
+      app: api-testing-framework
+
+# ========================================
+# USAGE EXAMPLES FOR BEGINNERS:
+# ========================================
+
+# 🏗️ DEPLOY THE APPLICATION:
+# kubectl apply -f k8s/deployment.yaml
+
+# 🔍 CHECK DEPLOYMENT STATUS:
+# kubectl get deployment api-testing-framework -n api-testing
+# kubectl describe deployment api-testing-framework -n api-testing
+
+# 📦 VIEW PODS:
+# kubectl get pods -n api-testing -l app=api-testing-framework
+# kubectl describe pod <pod-name> -n api-testing
+
+# 📊 CHECK AUTOSCALER:
+# kubectl get hpa -n api-testing
+# kubectl describe hpa api-testing-framework-hpa -n api-testing
+
+# 🔄 SCALE MANUALLY:
+# kubectl scale deployment api-testing-framework --replicas=5 -n api-testing
+
+# 📋 VIEW LOGS:
+# kubectl logs -f deployment/api-testing-framework -n api-testing
+# kubectl logs -f <pod-name> -c api-testing-framework -n api-testing
+
+# 🔧 PORT FORWARD FOR LOCAL ACCESS:
+# kubectl port-forward deployment/api-testing-framework 8080:8080 -n api-testing
+
+# 🎯 EXECUTE COMMANDS IN POD:
+# kubectl exec -it <pod-name> -n api-testing -- /bin/bash
+# kubectl exec -it <pod-name> -n api-testing -- python -m pytest tests/api/test_users.py -v
+
+# 🔄 ROLLING UPDATE:
+# kubectl set image deployment/api-testing-framework api-testing-framework=api-testing-framework:2.1.0 -n api-testing
+# kubectl rollout status deployment/api-testing-framework -n api-testing
+
+# ⏪ ROLLBACK DEPLOYMENT:
+# kubectl rollout undo deployment/api-testing-framework -n api-testing
+# kubectl rollout history deployment/api-testing-framework -n api-testing
+
+# 🗑️ DELETE DEPLOYMENT:
+# kubectl delete -f k8s/deployment.yaml
+
+# ========================================
+# PRODUCTION CHECKLIST:
+# ========================================
+
+# ✅ SECURITY:
+# - Non-root user execution
+# - Read-only root filesystem  
+# - Dropped ALL capabilities
+# - Security contexts configured
+# - Secrets properly mounted
+
+# ✅ RELIABILITY:
+# - Health checks configured
+# - Resource limits set
+# - Graceful shutdown hooks
+# - Pod disruption budget
+# - Anti-affinity rules
+
+# ✅ SCALABILITY:
+# - Horizontal pod autoscaler
+# - Resource-based scaling
+# - Proper resource requests/limits
+# - Multiple replicas
+
+# ✅ OBSERVABILITY:
+# - Prometheus metrics
+# - Structured logging
+# - Health endpoints
+# - Performance monitoring
+
+# ✅ OPERATIONS:
+# - Rolling update strategy
+# - Rollback capability
+# - Configuration externalized
+# - Persistent storage for reports
+
+# 🎯 BENEFITS:
+# ✅ HIGH AVAILABILITY: Multiple replicas across nodes
+# ✅ AUTO SCALING: Scales based on demand
+# ✅ SELF HEALING: Automatically restarts failed containers
+# ✅ ZERO DOWNTIME: Rolling updates with no service interruption
+# ✅ RESOURCE EFFICIENT: Only uses what it needs
+# ✅ SECURE: Follows security best practices
+# ✅ OBSERVABLE: Full monitoring and logging
+# ✅ MAINTAINABLE: Easy to update and manage 
