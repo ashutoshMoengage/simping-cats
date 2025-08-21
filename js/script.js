@@ -268,10 +268,10 @@ function showLove() {
     // Show success message
     successMessage.style.display = 'block';
     
-    // Hide success message after 5 seconds
+    // Hide success message after 8 seconds (longer time to read creative messages)
     setTimeout(() => {
         successMessage.style.display = 'none';
-    }, 5000);
+    }, 8000);
     
     // Create lots of happy hearts with variety
     for (let i = 0; i < 30; i++) {
