@@ -369,34 +369,7 @@ body {
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
-/* Privacy notice */
-.privacy-notice {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 10px 15px;
-    border-radius: 25px;
-    font-size: 0.9em;
-    z-index: 1001;
-    max-width: 300px;
-}
 
-.privacy-notice button {
-    background: #4ecdc4;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 15px;
-    cursor: pointer;
-    margin-left: 10px;
-    font-size: 0.8em;
-}
-
-.privacy-notice button:hover {
-    background: #45b7b8;
-}
 
 /* Mobile responsive */
 @media (max-width: 768px) {
@@ -447,10 +420,5 @@ body {
     
     .analytics-tabs {
         flex-direction: column;
-    }
-    
-    .privacy-notice {
-        bottom: 85px;
-        max-width: 250px;
     }
 } 

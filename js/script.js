@@ -17,12 +17,12 @@ let analytics = {
         console.log('Analytics initialized for user:', this.userId);
     },
     
-    // Get or create user ID
+    // Get or create user ID using localStorage only
     getUserId() {
-        let userId = this.getCookie('simpingCatsUserId');
+        let userId = localStorage.getItem('simpingCatsUserId');
         if (!userId) {
             userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            this.setCookie('simpingCatsUserId', userId, 365); // Store for 1 year
+            localStorage.setItem('simpingCatsUserId', userId);
         }
         return userId;
     },
@@ -30,24 +30,6 @@ let analytics = {
     // Generate session ID
     generateSessionId() {
         return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    },
-    
-    // Cookie helper functions
-    setCookie(name, value, days) {
-        const expires = new Date();
-        expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
-        document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
-    },
-    
-    getCookie(name) {
-        const nameEQ = name + "=";
-        const ca = document.cookie.split(';');
-        for(let i = 0; i < ca.length; i++) {
-            let c = ca[i];
-            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-            if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-        }
-        return null;
     },
     
     // Get browser info
@@ -257,16 +239,6 @@ window.addEventListener('load', () => {
     createHearts();
     positionNoButtonInitially();
     setupEventListeners();
-    
-    // Show privacy notice if not acknowledged
-    const privacyNotice = document.getElementById('privacyNotice');
-    const acknowledged = analytics.getCookie('simpingCatsPrivacyAcknowledged');
-    
-    if (!acknowledged) {
-        setTimeout(() => {
-            privacyNotice.style.display = 'block';
-        }, 3000); // Show after 3 seconds
-    }
 });
 
 // Position the No button initially
@@ -633,7 +605,7 @@ function showExportTab() {
             <p style="color: #666; line-height: 1.6;">
                 All analytics data is stored locally in your browser only. No data is sent to external servers. 
                 Data includes user IDs (randomly generated), click counts, timestamps, and basic browser information.
-                Users are tracked via cookies to provide consistent analytics across sessions.
+                Users are tracked via localStorage to provide consistent analytics across sessions.
             </p>
         </div>
     `;
@@ -718,20 +690,14 @@ function clearAnalyticsData() {
         localStorage.removeItem('simpingCatsVisits');
         localStorage.removeItem('simpingCatsClicks');
         localStorage.removeItem('simpingCatsUserStats');
-        
-        // Clear cookies
-        document.cookie = 'simpingCatsUserId=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/';
+        localStorage.removeItem('simpingCatsUserId');
         
         alert('✅ All analytics data has been cleared!');
         closeAdmin();
     }
 }
 
-function hidePrivacyNotice() {
-    const privacyNotice = document.getElementById('privacyNotice');
-    privacyNotice.style.display = 'none';
-    analytics.setCookie('simpingCatsPrivacyAcknowledged', 'true', 365);
-}
+
 
 // Export functions for HTML onclick handlers
 window.moveButton = moveButton;
@@ -741,5 +707,4 @@ window.openAdmin = openAdmin;
 window.closeAdmin = closeAdmin;
 window.showTab = showTab;
 window.exportData = exportData;
-window.clearAnalyticsData = clearAnalyticsData;
-window.hidePrivacyNotice = hidePrivacyNotice; 
+window.clearAnalyticsData = clearAnalyticsData; 
