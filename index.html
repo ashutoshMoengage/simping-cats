@@ -53,6 +53,38 @@
         </p>
     </div>
 
+    <!-- Analytics Admin Panel (hidden by default) -->
+    <div class="admin-panel" id="adminPanel" style="display: none;">
+        <div class="admin-header">
+            <h2>📊 Simping Cats Analytics</h2>
+            <button class="close-admin" onclick="closeAdmin()">✕</button>
+        </div>
+        <div class="admin-content">
+            <div class="stats-grid" id="statsGrid">
+                <!-- Stats will be populated by JavaScript -->
+            </div>
+            <div class="analytics-tabs">
+                <button class="tab-btn active" onclick="showTab('summary')">Summary</button>
+                <button class="tab-btn" onclick="showTab('users')">Users</button>
+                <button class="tab-btn" onclick="showTab('clicks')">Clicks</button>
+                <button class="tab-btn" onclick="showTab('export')">Export</button>
+            </div>
+            <div class="tab-content" id="tabContent">
+                <!-- Tab content will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin access button (small, bottom corner) -->
+    <div class="admin-access" onclick="openAdmin()" title="Analytics Dashboard">
+        📊
+    </div>
+
+    <!-- Privacy notice (small, bottom left) -->
+    <div class="privacy-notice" id="privacyNotice">
+        <small>🍪 This site uses cookies for analytics. <button onclick="hidePrivacyNotice()">OK</button></small>
+    </div>
+
     <!-- JavaScript -->
     <script src="js/script.js"></script>
 </body>

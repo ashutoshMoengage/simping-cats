@@ -1,7 +1,149 @@
-// Simping Cats Interactive Script
+// Simping Cats Interactive Script with Analytics
 let noButtonClickCount = 0;
 let yesButtonClickCount = 0;
-const catApiKey = 'live_1'; 
+const catApiKey = 'live_1';
+
+// Analytics System
+let analytics = {
+    userId: null,
+    sessionId: null,
+    startTime: Date.now(),
+    
+    // Initialize analytics
+    init() {
+        this.userId = this.getUserId();
+        this.sessionId = this.generateSessionId();
+        this.recordVisit();
+        console.log('Analytics initialized for user:', this.userId);
+    },
+    
+    // Get or create user ID
+    getUserId() {
+        let userId = this.getCookie('simpingCatsUserId');
+        if (!userId) {
+            userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            this.setCookie('simpingCatsUserId', userId, 365); // Store for 1 year
+        }
+        return userId;
+    },
+    
+    // Generate session ID
+    generateSessionId() {
+        return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    },
+    
+    // Cookie helper functions
+    setCookie(name, value, days) {
+        const expires = new Date();
+        expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+        document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+    },
+    
+    getCookie(name) {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
+        for(let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+    },
+    
+    // Get browser info
+    getBrowserInfo() {
+        return {
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            platform: navigator.platform,
+            cookieEnabled: navigator.cookieEnabled,
+            screenResolution: screen.width + 'x' + screen.height,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            timestamp: new Date().toISOString()
+        };
+    },
+    
+    // Record a visit
+    recordVisit() {
+        const visits = JSON.parse(localStorage.getItem('simpingCatsVisits') || '[]');
+        const visit = {
+            userId: this.userId,
+            sessionId: this.sessionId,
+            visitTime: new Date().toISOString(),
+            browserInfo: this.getBrowserInfo()
+        };
+        visits.push(visit);
+        localStorage.setItem('simpingCatsVisits', JSON.stringify(visits));
+    },
+    
+    // Track button clicks
+    trackClick(buttonType, extraData = {}) {
+        const clicks = JSON.parse(localStorage.getItem('simpingCatsClicks') || '[]');
+        const click = {
+            userId: this.userId,
+            sessionId: this.sessionId,
+            buttonType: buttonType, // 'yes' or 'no'
+            timestamp: new Date().toISOString(),
+            clickCount: buttonType === 'yes' ? yesButtonClickCount : noButtonClickCount,
+            ...extraData
+        };
+        clicks.push(click);
+        localStorage.setItem('simpingCatsClicks', JSON.stringify(clicks));
+        
+        // Also update user stats
+        this.updateUserStats(buttonType);
+    },
+    
+    // Update user statistics
+    updateUserStats(buttonType) {
+        const userStats = JSON.parse(localStorage.getItem('simpingCatsUserStats') || '{}');
+        if (!userStats[this.userId]) {
+            userStats[this.userId] = {
+                userId: this.userId,
+                firstVisit: new Date().toISOString(),
+                totalYes: 0,
+                totalNo: 0,
+                totalSessions: 0,
+                lastVisit: new Date().toISOString()
+            };
+        }
+        
+        userStats[this.userId][`total${buttonType.charAt(0).toUpperCase() + buttonType.slice(1)}`]++;
+        userStats[this.userId].lastVisit = new Date().toISOString();
+        
+        localStorage.setItem('simpingCatsUserStats', JSON.stringify(userStats));
+    },
+    
+    // Get analytics data
+    getAnalyticsData() {
+        return {
+            visits: JSON.parse(localStorage.getItem('simpingCatsVisits') || '[]'),
+            clicks: JSON.parse(localStorage.getItem('simpingCatsClicks') || '[]'),
+            userStats: JSON.parse(localStorage.getItem('simpingCatsUserStats') || '{}')
+        };
+    },
+    
+    // Generate analytics summary
+    generateSummary() {
+        const data = this.getAnalyticsData();
+        const totalVisits = data.visits.length;
+        const totalClicks = data.clicks.length;
+        const totalUsers = Object.keys(data.userStats).length;
+        const totalYesClicks = data.clicks.filter(c => c.buttonType === 'yes').length;
+        const totalNoClicks = data.clicks.filter(c => c.buttonType === 'no').length;
+        
+        return {
+            totalUsers,
+            totalVisits,
+            totalClicks,
+            totalYesClicks,
+            totalNoClicks,
+            yesPercentage: totalClicks > 0 ? ((totalYesClicks / totalClicks) * 100).toFixed(1) : 0,
+            averageClicksPerUser: totalUsers > 0 ? (totalClicks / totalUsers).toFixed(1) : 0,
+            data
+        };
+    }
+}; 
 
 // Extended collection of cute cat image URLs as fallback
 const fallbackCats = [
@@ -111,9 +253,20 @@ const successResponses = [
 
 // Initialize the page
 window.addEventListener('load', () => {
+    analytics.init(); // Initialize analytics tracking
     createHearts();
     positionNoButtonInitially();
     setupEventListeners();
+    
+    // Show privacy notice if not acknowledged
+    const privacyNotice = document.getElementById('privacyNotice');
+    const acknowledged = analytics.getCookie('simpingCatsPrivacyAcknowledged');
+    
+    if (!acknowledged) {
+        setTimeout(() => {
+            privacyNotice.style.display = 'block';
+        }, 3000); // Show after 3 seconds
+    }
 });
 
 // Position the No button initially
@@ -193,6 +346,12 @@ function moveButton() {
     
     noButtonClickCount++;
     
+    // Track the No button click
+    analytics.trackClick('no', { 
+        simpingLineIndex: (noButtonClickCount - 1) % simpingLines.length,
+        totalNoClicks: noButtonClickCount 
+    });
+    
     // Add shake animation to button
     noBtn.classList.add('btn-shake');
     setTimeout(() => noBtn.classList.remove('btn-shake'), 500);
@@ -250,6 +409,12 @@ function showLove() {
     const simpingTextElement = document.getElementById('simpingText');
     
     yesButtonClickCount++;
+    
+    // Track the Yes button click
+    analytics.trackClick('yes', { 
+        totalYesClicks: yesButtonClickCount,
+        responseTitle: successResponses[Math.floor(Math.random() * successResponses.length)].title
+    });
     
     // Change cat image on Yes click too!
     loadNewCat();
@@ -329,7 +494,252 @@ function showCatFact() {
     }
 }
 
+// Admin Panel Functions
+function openAdmin() {
+    const adminPanel = document.getElementById('adminPanel');
+    adminPanel.style.display = 'flex';
+    loadAnalyticsData();
+}
+
+function closeAdmin() {
+    const adminPanel = document.getElementById('adminPanel');
+    adminPanel.style.display = 'none';
+}
+
+function showTab(tabName) {
+    // Update active tab button
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Show corresponding tab content
+    const tabContent = document.getElementById('tabContent');
+    const summary = analytics.generateSummary();
+    
+    switch(tabName) {
+        case 'summary':
+            showSummaryTab(summary);
+            break;
+        case 'users':
+            showUsersTab(summary.data.userStats);
+            break;
+        case 'clicks':
+            showClicksTab(summary.data.clicks);
+            break;
+        case 'export':
+            showExportTab();
+            break;
+    }
+}
+
+function showSummaryTab(summary) {
+    const tabContent = document.getElementById('tabContent');
+    tabContent.innerHTML = `
+        <div class="summary-info">
+            <h3>📊 Quick Stats</h3>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <strong>Success Rate:</strong> ${summary.yesPercentage}% users clicked "Yes"
+                </div>
+                <div class="summary-item">
+                    <strong>Engagement:</strong> ${summary.averageClicksPerUser} clicks per user
+                </div>
+                <div class="summary-item">
+                    <strong>Most Resistant:</strong> ${summary.totalNoClicks > summary.totalYesClicks ? 'Users prefer clicking "No"' : 'Users love clicking "Yes"'}
+                </div>
+            </div>
+            
+            <h3 style="margin-top: 30px;">📈 Recent Activity</h3>
+            <div class="recent-activity">
+                ${summary.data.clicks.slice(-5).reverse().map(click => `
+                    <div class="activity-item">
+                        <span class="activity-time">${new Date(click.timestamp).toLocaleString()}</span>
+                        <span class="activity-action ${click.buttonType}">${click.buttonType.toUpperCase()} click</span>
+                        <span class="activity-user">${click.userId.substr(-8)}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        <style>
+            .summary-grid { display: grid; gap: 15px; margin: 15px 0; }
+            .summary-item { background: #f0f8ff; padding: 15px; border-radius: 8px; }
+            .activity-item { display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; margin: 5px 0; border-radius: 5px; }
+            .activity-action.yes { color: #28a745; font-weight: bold; }
+            .activity-action.no { color: #dc3545; font-weight: bold; }
+            .activity-time { color: #666; font-size: 0.9em; }
+            .activity-user { color: #007bff; font-family: monospace; }
+        </style>
+    `;
+}
+
+function showUsersTab(userStats) {
+    const tabContent = document.getElementById('tabContent');
+    const users = Object.values(userStats);
+    
+    tabContent.innerHTML = `
+        <h3>👥 User Statistics (${users.length} unique users)</h3>
+        <ul class="user-list">
+            ${users.map(user => `
+                <li class="user-item">
+                    <strong>User ID:</strong> ${user.userId}<br>
+                    <strong>First Visit:</strong> ${new Date(user.firstVisit).toLocaleString()}<br>
+                    <strong>Last Visit:</strong> ${new Date(user.lastVisit).toLocaleString()}<br>
+                    <strong>Total Yes:</strong> <span style="color: #28a745;">${user.totalYes}</span> | 
+                    <strong>Total No:</strong> <span style="color: #dc3545;">${user.totalNo}</span><br>
+                    <strong>Ratio:</strong> ${user.totalYes + user.totalNo > 0 ? 
+                        `${((user.totalYes / (user.totalYes + user.totalNo)) * 100).toFixed(1)}% Yes` : 'No clicks yet'}
+                </li>
+            `).join('')}
+        </ul>
+    `;
+}
+
+function showClicksTab(clicks) {
+    const tabContent = document.getElementById('tabContent');
+    const recentClicks = clicks.slice(-20).reverse(); // Show last 20 clicks
+    
+    tabContent.innerHTML = `
+        <h3>👆 Recent Clicks (showing last 20 of ${clicks.length} total)</h3>
+        <ul class="click-list">
+            ${recentClicks.map(click => `
+                <li class="click-item">
+                    <strong>Time:</strong> ${new Date(click.timestamp).toLocaleString()}<br>
+                    <strong>User:</strong> ${click.userId}<br>
+                    <strong>Action:</strong> <span style="color: ${click.buttonType === 'yes' ? '#28a745' : '#dc3545'}; font-weight: bold;">
+                        ${click.buttonType.toUpperCase()} CLICK
+                    </span><br>
+                    <strong>Click #:</strong> ${click.clickCount} for this user<br>
+                    ${click.simpingLineIndex !== undefined ? `<strong>Simping Line:</strong> #${click.simpingLineIndex + 1}` : ''}
+                    ${click.responseTitle ? `<strong>Response:</strong> "${click.responseTitle}"` : ''}
+                </li>
+            `).join('')}
+        </ul>
+    `;
+}
+
+function showExportTab() {
+    const tabContent = document.getElementById('tabContent');
+    
+    tabContent.innerHTML = `
+        <h3>📥 Export & Manage Data</h3>
+        <div class="export-buttons">
+            <button class="export-btn" onclick="exportData('json')">📄 Export as JSON</button>
+            <button class="export-btn" onclick="exportData('csv')">📊 Export as CSV</button>
+            <button class="export-btn" onclick="exportData('summary')">📋 Export Summary</button>
+            <button class="export-btn clear-btn" onclick="clearAnalyticsData()">🗑️ Clear All Data</button>
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <h4>🔒 Privacy Information</h4>
+            <p style="color: #666; line-height: 1.6;">
+                All analytics data is stored locally in your browser only. No data is sent to external servers. 
+                Data includes user IDs (randomly generated), click counts, timestamps, and basic browser information.
+                Users are tracked via cookies to provide consistent analytics across sessions.
+            </p>
+        </div>
+    `;
+}
+
+function loadAnalyticsData() {
+    const summary = analytics.generateSummary();
+    const statsGrid = document.getElementById('statsGrid');
+    
+    statsGrid.innerHTML = `
+        <div class="stat-card">
+            <div class="stat-number">${summary.totalUsers}</div>
+            <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">${summary.totalClicks}</div>
+            <div class="stat-label">Total Clicks</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">${summary.totalYesClicks}</div>
+            <div class="stat-label">Yes Clicks</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">${summary.totalNoClicks}</div>
+            <div class="stat-label">No Clicks</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">${summary.yesPercentage}%</div>
+            <div class="stat-label">Success Rate</div>
+        </div>
+    `;
+    
+    // Show summary tab by default
+    showSummaryTab(summary);
+}
+
+function exportData(format) {
+    const summary = analytics.generateSummary();
+    const timestamp = new Date().toISOString().split('T')[0];
+    
+    let content, filename, mimeType;
+    
+    if (format === 'json') {
+        content = JSON.stringify(summary.data, null, 2);
+        filename = `simping-cats-data-${timestamp}.json`;
+        mimeType = 'application/json';
+    } else if (format === 'csv') {
+        const clicks = summary.data.clicks;
+        const csvHeader = 'Timestamp,User ID,Button Type,Click Count\n';
+        const csvData = clicks.map(click => 
+            `${click.timestamp},${click.userId},${click.buttonType},${click.clickCount}`
+        ).join('\n');
+        content = csvHeader + csvData;
+        filename = `simping-cats-clicks-${timestamp}.csv`;
+        mimeType = 'text/csv';
+    } else if (format === 'summary') {
+        content = `Simping Cats Analytics Summary - ${timestamp}
+        
+Total Users: ${summary.totalUsers}
+Total Visits: ${summary.totalVisits}  
+Total Clicks: ${summary.totalClicks}
+Yes Clicks: ${summary.totalYesClicks} (${summary.yesPercentage}%)
+No Clicks: ${summary.totalNoClicks}
+Average Clicks per User: ${summary.averageClicksPerUser}
+
+Generated: ${new Date().toLocaleString()}`;
+        filename = `simping-cats-summary-${timestamp}.txt`;
+        mimeType = 'text/plain';
+    }
+    
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function clearAnalyticsData() {
+    if (confirm('⚠️ This will permanently delete all analytics data. Are you sure?')) {
+        localStorage.removeItem('simpingCatsVisits');
+        localStorage.removeItem('simpingCatsClicks');
+        localStorage.removeItem('simpingCatsUserStats');
+        
+        // Clear cookies
+        document.cookie = 'simpingCatsUserId=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/';
+        
+        alert('✅ All analytics data has been cleared!');
+        closeAdmin();
+    }
+}
+
+function hidePrivacyNotice() {
+    const privacyNotice = document.getElementById('privacyNotice');
+    privacyNotice.style.display = 'none';
+    analytics.setCookie('simpingCatsPrivacyAcknowledged', 'true', 365);
+}
+
 // Export functions for HTML onclick handlers
 window.moveButton = moveButton;
 window.showLove = showLove;
-window.closeSuccessMessage = closeSuccessMessage; 
+window.closeSuccessMessage = closeSuccessMessage;
+window.openAdmin = openAdmin;
+window.closeAdmin = closeAdmin;
+window.showTab = showTab;
+window.exportData = exportData;
+window.clearAnalyticsData = clearAnalyticsData;
+window.hidePrivacyNotice = hidePrivacyNotice; 
