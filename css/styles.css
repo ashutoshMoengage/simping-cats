@@ -44,11 +44,29 @@ body {
 .question {
     font-size: 2.2em;
     color: #ff6b6b;
-    margin-bottom: 35px;
+    margin-bottom: 15px;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
     font-weight: bold;
     max-width: 500px;
     transition: all 0.4s ease;
+}
+
+.simping-text {
+    font-size: 1.4em;
+    color: #ff8a8a;
+    margin-bottom: 35px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    font-weight: 500;
+    max-width: 500px;
+    min-height: 40px;
+    transition: all 0.4s ease;
+    opacity: 0;
+    transform: translateY(-10px);
+}
+
+.simping-text.show {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .buttons-container {
@@ -180,7 +198,13 @@ body {
     
     .question {
         font-size: 1.8em;
+        margin-bottom: 12px;
+    }
+    
+    .simping-text {
+        font-size: 1.1em;
         margin-bottom: 25px;
+        min-height: 30px;
     }
     
     .btn {

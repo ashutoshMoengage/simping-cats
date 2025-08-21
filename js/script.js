@@ -134,6 +134,7 @@ async function loadNewCat() {
 function moveButton() {
     const noBtn = document.getElementById('noBtn');
     const questionElement = document.querySelector('.question');
+    const simpingTextElement = document.getElementById('simpingText');
     
     noButtonClickCount++;
     
@@ -165,11 +166,12 @@ function moveButton() {
     // Change cat image on No click
     loadNewCat();
     
-    // Show enhanced simping lines
+    // Show enhanced simping lines in the simping text element (keep main question)
     const lineIndex = (noButtonClickCount - 1) % simpingLines.length;
-    questionElement.textContent = simpingLines[lineIndex];
+    simpingTextElement.textContent = simpingLines[lineIndex];
+    simpingTextElement.classList.add('show');
     
-    // Add bounce animation to question
+    // Add bounce animation to main question
     questionElement.classList.add('question-bounce');
     setTimeout(() => questionElement.classList.remove('question-bounce'), 600);
     
@@ -181,7 +183,7 @@ function moveButton() {
     // After showing all unique lines, cycle through random ones
     if (noButtonClickCount > simpingLines.length) {
         const randomIndex = Math.floor(Math.random() * simpingLines.length);
-        questionElement.textContent = simpingLines[randomIndex];
+        simpingTextElement.textContent = simpingLines[randomIndex];
     }
 }
 
@@ -189,11 +191,18 @@ function moveButton() {
 function showLove() {
     const successMessage = document.getElementById('successMessage');
     const successText = successMessage.querySelector('p');
+    const simpingTextElement = document.getElementById('simpingText');
     
     yesButtonClickCount++;
     
     // Change cat image on Yes click too!
     loadNewCat();
+    
+    // Clear any simping text since they said yes!
+    simpingTextElement.classList.remove('show');
+    setTimeout(() => {
+        simpingTextElement.textContent = '';
+    }, 400);
     
     // Show random success message
     const randomMessage = successMessages[Math.floor(Math.random() * successMessages.length)];
@@ -210,13 +219,6 @@ function showLove() {
     // Create lots of happy hearts
     for (let i = 0; i < 25; i++) {
         setTimeout(() => createHeart(), i * 100);
-    }
-    
-    // Reset question text occasionally
-    if (yesButtonClickCount > 1) {
-        setTimeout(() => {
-            document.querySelector('.question').textContent = 'Will you miss me? 🥺';
-        }, 3000);
     }
 }
 
