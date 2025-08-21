@@ -45,13 +45,68 @@ const simpingLines = [
     "Fine, I'll admit dogs are okay... JUST KIDDING! 😹"
 ];
 
-// Success messages for when they click Yes
-const successMessages = [
-    "Yay! You chose the right answer! 💕",
-    "I knew you couldn't resist my charm! 😸",
-    "We're going to be best friends forever! 🐱💖",
-    "You've made this kitty very happy! 😻",
-    "Purr-fect choice, human! 🥰"
+// Creative success responses for when they click Yes
+const successResponses = [
+    {
+        title: "OMG YES! 🎉✨",
+        message: "I knew you had good taste! Time for celebration zoomies! 🏃‍♂️💨"
+    },
+    {
+        title: "PURR-FECTION! 😻",
+        message: "You just became my favorite human ever! *happy tail wiggles* 🐾"
+    },
+    {
+        title: "Victory Achieved! 🏆",
+        message: "I'm doing my happy dance right now! Can you see my little paws? 💃🐱"
+    },
+    {
+        title: "Best Human Award! 🥇",
+        message: "You passed the cuteness test with flying whiskers! 🎖️✨"
+    },
+    {
+        title: "Heart Status: MELTED 💖",
+        message: "Brb, gonna knock something off your table out of pure joy! 😹"
+    },
+    {
+        title: "Mission Accomplished! 🎯",
+        message: "My simping skills are legendary! You never stood a chance 😎💕"
+    },
+    {
+        title: "Cat Approved! ✅",
+        message: "Welcome to the exclusive 'Humans I Actually Like' club! 🎪"
+    },
+    {
+        title: "Jackpot! 🎰💎",
+        message: "I'm purring so loud the neighbors are complaining! 📢😸"
+    },
+    {
+        title: "You're Pawsome! 🐾⭐",
+        message: "I'll remember this when I'm deciding who gets morning cuddles! 🤗"
+    },
+    {
+        title: "Checkmate! ♟️👑",
+        message: "My cuteness strategy worked flawlessly! PhD in Adorability pays off! 🎓"
+    },
+    {
+        title: "WOOHOO! 🎊🎈",
+        message: "Time to celebrate with a victory nap in your favorite chair! 😴💺"
+    },
+    {
+        title: "Success Unlocked! 🔓",
+        message: "Achievement: 'Fell for Cat Charm' - Reward: Eternal cat friendship! 🏅"
+    },
+    {
+        title: "Plot Twist! 🎭",
+        message: "The cat was the main character all along! *dramatic paw pose* 🎬"
+    },
+    {
+        title: "HIGH FIVE! ✋💫",
+        message: "Oops, I only have paws... HIGH PAW instead! 🐾"
+    },
+    {
+        title: "Level Up! 🆙",
+        message: "You just upgraded from 'human' to 'cat whisperer'! 🗣️✨"
+    }
 ];
 
 // Initialize the page
@@ -187,10 +242,11 @@ function moveButton() {
     }
 }
 
-// Handle Yes button click - enhanced with cat changing
+// Handle Yes button click - enhanced with cat changing and creative responses
 function showLove() {
     const successMessage = document.getElementById('successMessage');
-    const successText = successMessage.querySelector('p');
+    const successTitle = document.getElementById('successTitle');
+    const successText = document.getElementById('successText');
     const simpingTextElement = document.getElementById('simpingText');
     
     yesButtonClickCount++;
@@ -204,9 +260,10 @@ function showLove() {
         simpingTextElement.textContent = '';
     }, 400);
     
-    // Show random success message
-    const randomMessage = successMessages[Math.floor(Math.random() * successMessages.length)];
-    successText.textContent = randomMessage;
+    // Show random creative success response
+    const randomResponse = successResponses[Math.floor(Math.random() * successResponses.length)];
+    successTitle.textContent = randomResponse.title;
+    successText.textContent = randomResponse.message;
     
     // Show success message
     successMessage.style.display = 'block';
@@ -216,9 +273,9 @@ function showLove() {
         successMessage.style.display = 'none';
     }, 5000);
     
-    // Create lots of happy hearts
-    for (let i = 0; i < 25; i++) {
-        setTimeout(() => createHeart(), i * 100);
+    // Create lots of happy hearts with variety
+    for (let i = 0; i < 30; i++) {
+        setTimeout(() => createHeart(), i * 80);
     }
 }
 
